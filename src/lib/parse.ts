@@ -11,6 +11,8 @@
  * errors carrying exact line/column positions (powering the caret-style report).
  */
 import { parse, evaluate } from "@humanwhocodes/momoa";
+import { jsonrepair } from "jsonrepair";
+import { diffChars } from "diff";
 
 /** A parsed JSON value (numbers may be rounded — value consumers don't need lexeme fidelity). */
 export type JsonValue =
@@ -41,7 +43,9 @@ export interface ParseReport {
 }
 
 export type InputFormat = "auto" | "json" | "jsonl";
-export type ValidDocument = { status: "valid"; value: JsonValue; tokens: JsonToken[]; source: string; records?: ValidDocument[]; extracted?: boolean };
+export type ValidDocument = { status: "valid"; value: JsonValue; tokens: JsonToken[]; source: string; records?: ValidDocument[]; extracted?: boolean;
+  /** Errors found in the original text that were auto-fixed (positions refer to the input). */
+  issues?: ParseReport[] };
 export type DocumentResult =
   | { status: "empty" }
   | { status: "invalid"; report: ParseReport }
@@ -131,9 +135,90 @@ function parseSingle(text: string): DocumentResult {
   }
 }
 
+/** Shift a report found in a slice so its position points into the full input. */
+function shiftReport(report: ParseReport, full: string, sliceStart: number): ParseReport {
+  const before = full.slice(0, sliceStart);
+  const lineOffset = before.split("\n").length - 1;
+  const colOffset = report.line === 1 ? sliceStart - (before.lastIndexOf("\n") + 1) : 0;
+  const line = report.line + lineOffset;
+  const column = report.column + colOffset;
+  const { context, caretOffset } = buildContext(full, line, column);
+  const message = report.message.replace(/ — строка \d+, столбец \d+$/, "");
+  return { line, column, context, caretOffset, message: `${message} — строка ${line}, столбец ${column}` };
+}
+
+/**
+ * Strict parse; on failure try an automatic repair (quotes, missing/trailing
+ * commas, unquoted keys, comments, …). The original error is kept as an issue.
+ */
+const MAX_DIFF_CHARS = 50_000;
+
+function show(fragment: string): string {
+  const visible = fragment.replace(/\n/g, "↵").trim() || "пробел";
+  return `«${visible.length > 20 ? visible.slice(0, 20) + "…" : visible}»`;
+}
+
+/** Describe every repair as a positioned issue (one per source line). */
+function describeRepairs(original: string, repaired: string): ParseReport[] {
+  const parts = diffChars(original, repaired);
+  const byLine = new Map<number, { column: number; notes: string[] }>();
+  let offset = 0;
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i];
+    if (!part.added && !part.removed) {
+      offset += part.value.length;
+      continue;
+    }
+    let note: string;
+    const next = parts[i + 1];
+    if (part.removed && next?.added) {
+      note = `${show(part.value)} заменено на ${show(next.value)}`;
+      i++;
+    } else if (part.removed) {
+      note = `удалено лишнее ${show(part.value)}`;
+    } else {
+      note = `добавлено недостающее ${show(part.value)}`;
+    }
+    const before = original.slice(0, offset);
+    const line = before.split("\n").length;
+    const column = offset - (before.lastIndexOf("\n") + 1) + 1;
+    const entry = byLine.get(line) ?? { column, notes: [] };
+    entry.notes.push(note);
+    byLine.set(line, entry);
+    if (part.removed) offset += part.value.length;
+  }
+  return [...byLine.entries()].map(([line, { column, notes }]) => {
+    const { context, caretOffset } = buildContext(original, line, column);
+    const counts = new Map<string, number>();
+    for (const note of notes) counts.set(note, (counts.get(note) ?? 0) + 1);
+    const text = [...counts].map(([note, n]) => (n > 1 ? `${note} (×${n})` : note)).join("; ");
+    return { line, column, context, caretOffset,
+      message: `${text.charAt(0).toUpperCase()}${text.slice(1)} — строка ${line}, столбец ${column}` };
+  });
+}
+
+function parseOrRepair(text: string): DocumentResult {
+  const strict = parseSingle(text);
+  if (strict.status !== "invalid") return strict;
+  try {
+    const fixedText = jsonrepair(text);
+    const repaired = parseSingle(fixedText);
+    if (repaired.status === "valid") {
+      const described = text.length <= MAX_DIFF_CHARS ? describeRepairs(text, fixedText) : [];
+      return { ...repaired, issues: described.length ? described : [strict.report] };
+    }
+  } catch {
+    /* not repairable */
+  }
+  return strict;
+}
+
 function combineRecords(records: ValidDocument[], extracted = false): DocumentResult {
   const combined = parseSingle(`[${records.map((record) => record.source.trim()).join(",\n")}]`);
-  return combined.status === "valid" ? { ...combined, records, extracted } : combined;
+  const issues = records.flatMap((record) => record.issues ?? []);
+  return combined.status === "valid"
+    ? { ...combined, records, extracted, ...(issues.length ? { issues } : {}) }
+    : combined;
 }
 
 function parseLines(text: string): DocumentResult {
@@ -141,7 +226,14 @@ function parseLines(text: string): DocumentResult {
   const lines = text.split(/\r?\n/);
   for (let index = 0; index < lines.length; index++) {
     if (!lines[index].trim()) continue;
-    const record = parseSingle(lines[index]);
+    const record = /^\s*[[{]/.test(lines[index]) ? parseOrRepair(lines[index]) : parseSingle(lines[index]);
+    if (record.status === "valid" && record.issues) {
+      record.issues = record.issues.map((issue) => {
+        const { context, caretOffset } = buildContext(text.replace(/\r/g, ""), index + 1, issue.column);
+        return { ...issue, line: index + 1, context, caretOffset,
+          message: issue.message.replace(/строка \d+/, `строка ${index + 1}`) };
+      });
+    }
     if (record.status === "invalid") {
       const report = record.report;
       return { status: "invalid", report: { ...report, line: index + 1,
@@ -183,8 +275,12 @@ function extractContainers(text: string): ValidDocument[] {
         continue;
       }
       if (!stack.length) {
-        const record = parseSingle(text.slice(start, index + 1));
-        if (record.status === "valid") records.push(record);
+        const record = parseOrRepair(text.slice(start, index + 1));
+        if (record.status === "valid") {
+          const sliceStart = start;
+          if (record.issues) record.issues = record.issues.map((issue) => shiftReport(issue, text, sliceStart));
+          records.push(record);
+        }
         start = -1;
       }
     }
@@ -196,13 +292,19 @@ function extractContainers(text: string): ValidDocument[] {
 export function parseDocument(text: string, format: InputFormat = "auto"): DocumentResult {
   if (format === "jsonl") return parseLines(text);
   const strict = parseSingle(text);
-  if (strict.status !== "invalid" || format === "json") return strict;
+  if (strict.status !== "invalid") return strict;
+  if (format === "json") return parseOrRepair(text);
   const lines = text.split(/\r?\n/).filter((line) => line.trim());
   if (lines.length > 1) {
     const jsonl = parseLines(text);
     if (jsonl.status === "valid") return jsonl;
     // Do not lose malformed rows from a likely JSONL document.
     if (lines.every((line) => /^\s*[\[{]/.test(line)) && lines.some((line) => parseSingle(line).status === "valid")) return jsonl;
+  }
+  // Whole text looks like one (broken) JSON document — repair it as a unit.
+  if (/^\s*[\[{]/.test(text) && /[\]}]\s*$/.test(text)) {
+    const repaired = parseOrRepair(text);
+    if (repaired.status === "valid") return repaired;
   }
   const records = extractContainers(text);
   if (!records.length) return strict;

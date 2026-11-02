@@ -26,19 +26,27 @@ interface InputEditorProps {
   value: string;
   onChange: (text: string) => void;
   onCursorChange: (position: { line: number; column: number }) => void;
-  /** 1-based line to underline as the parse-error location, or `null`. */
-  errorLine: number | null;
+  /** 1-based error positions to highlight (line underline + exact character mark). */
+  errors: { line: number; column: number }[];
   /** Active syntax theme; swapped live via a Compartment (cursor/undo survive). */
   theme: EditorTheme;
 }
 
 const errorLineDecoration = Decoration.line({ class: "cm-error-line" });
-const setErrorLineEffect = StateEffect.define<number | null>();
+const errorMarkDecoration = Decoration.mark({ class: "cm-error-mark" });
+type ErrorPos = { line: number; column: number };
+const setErrorLineEffect = StateEffect.define<ErrorPos[]>();
 
-function buildErrorDeco(state: EditorState, line: number | null): DecorationSet {
-  if (!line || line < 1 || line > state.doc.lines) return Decoration.none;
-  const from = state.doc.line(line).from;
-  return Decoration.set([errorLineDecoration.range(from)]);
+function buildErrorDeco(state: EditorState, errors: ErrorPos[]): DecorationSet {
+  const ranges = [];
+  for (const { line, column } of errors) {
+    if (line < 1 || line > state.doc.lines) continue;
+    const l = state.doc.line(line);
+    ranges.push(errorLineDecoration.range(l.from));
+    const at = Math.min(l.from + Math.max(column - 1, 0), l.to);
+    if (at < l.to) ranges.push(errorMarkDecoration.range(at, at + 1));
+  }
+  return Decoration.set(ranges, true);
 }
 
 const errorLineField = StateField.define<DecorationSet>({
@@ -58,7 +66,7 @@ const errorLineField = StateField.define<DecorationSet>({
 });
 
 export const InputEditor = forwardRef<InputEditorHandle, InputEditorProps>(function InputEditor(
-  { value, onChange, onCursorChange, errorLine, theme },
+  { value, onChange, onCursorChange, errors, theme },
   ref,
 ) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -147,12 +155,13 @@ export const InputEditor = forwardRef<InputEditorHandle, InputEditorProps>(funct
     view.dispatch({ effects: themeComp.current.reconfigure(theme.extension) });
   }, [theme]);
 
-  // Reconcile the error-line decoration.
+  const errorsKey = errors.map((e) => `${e.line}:${e.column}`).join(",");
+  // Reconcile the error decorations.
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
-    view.dispatch({ effects: setErrorLineEffect.of(errorLine) });
-  }, [errorLine]);
+    view.dispatch({ effects: setErrorLineEffect.of(errors) });
+  }, [errorsKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <div ref={hostRef} className="h-full min-h-0 overflow-auto text-sm" />;
 });

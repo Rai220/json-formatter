@@ -27,9 +27,8 @@ describe("local JSON and JSONL processing", () => {
   });
   it("reports invalid JSONL rows instead of losing them", () => {
     for (const mode of ["auto", "jsonl"] as const) {
-      const result = parseDocument('{"a":1}\n{"b":}\n{"c":3}', mode);
-      expect(result.status).toBe("invalid");
-      expect(result.status === "invalid" && result.report.line).toBe(2);
+      const result = parseDocument('{"a":1}\n{"b":\n{"c":3}', mode);
+      expect(result.status === "valid" && result.issues?.[0].line).toBe(2);
     }
   });
   it("preserves large integers when extracting and emitting JSONL", () => {
@@ -41,7 +40,33 @@ describe("local JSON and JSONL processing", () => {
     expect(emitJsonl(parseDocument('[{"id":9007199254740993},[1,2],"a",null]'))).toBe('{"id":9007199254740993}\n[1,2]\n"a"\nnull');
     expect(emitJsonl(parseDocument('[]'))).toBe("");
   });
-  it("does not salvage nested JSON from an invalid outer object", () => {
-    expect(parseDocument('{"a":{},"b":}').status).toBe("invalid");
+  it("repairs the outer object instead of salvaging nested JSON", () => {
+    const r = parseDocument('{"a":{},"b":}');
+    expect(r.status === "valid" && r.value).toEqual({ a: {}, b: null });
+  });
+  it("fixes wrong quotes and shows where the error was", () => {
+    const r = parseDocument("{'a': 1}");
+    expect(r.status === "valid" && r.value).toEqual({ a: 1 });
+    expect(r.status === "valid" && r.issues?.[0]).toMatchObject({ line: 1, column: 2 });
+  });
+  it("fixes a trailing comma", () => {
+    const r = parseDocument('{\n  "a": 1,\n}');
+    expect(r.status === "valid" && r.value).toEqual({ a: 1 });
+    expect(r.status === "valid" && r.issues?.[0]).toMatchObject({ line: 2, column: 9 });
+  });
+  it("fixes a missing comma", () => {
+    const r = parseDocument('{"a": 1\n "b": 2}');
+    expect(r.status === "valid" && r.value).toEqual({ a: 1, b: 2 });
+    expect(r.status === "valid" && r.issues?.[0]).toMatchObject({ line: 1, column: 8 });
+  });
+  it("fixes JSON embedded in text and points into the original text", () => {
+    const r = parseDocument("Вот ответ:\n{'x': [1, 2,]}");
+    expect(r.status === "valid" && r.value).toEqual({ x: [1, 2] });
+    expect(r.status === "valid" && r.issues?.[0].line).toBe(2);
+  });
+  it("lists every fixed error, not just the first", () => {
+    const r = parseDocument("{'a': 1,\n \"b\": 2\n \"c\": [1,],\n}");
+    expect(r.status === "valid" && r.value).toEqual({ a: 1, b: 2, c: [1] });
+    expect(r.status === "valid" && r.issues?.map((i) => i.line)).toEqual([1, 2, 3]);
   });
 });

@@ -63,6 +63,11 @@ export const toolEditorTheme = EditorView.theme(
       textDecoration: "underline wavy rgba(216,32,32,0.9)",
       textUnderlineOffset: "3px",
     },
+    ".cm-error-mark": {
+      backgroundColor: "rgba(216,32,32,0.28)",
+      outline: "1px solid rgba(216,32,32,0.8)",
+      borderRadius: "2px",
+    },
     ".cm-placeholder": { color: "rgba(11,37,69,0.5)" },
   },
   { dark: false },

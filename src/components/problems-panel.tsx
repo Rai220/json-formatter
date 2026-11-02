@@ -6,7 +6,8 @@
  * parse report and a "К строке N →" affordance that scrolls the input editor
  * to the offending line. Copy/Download of the Problems tab use `problemsReportText`.
  */
-import { ArrowRight, Check, X } from "lucide-react";
+import { ArrowRight, Check, Wrench, X } from "lucide-react";
+import type { ParseReport } from "@/lib/parse";
 import { Badge } from "@/components/base/badge";
 import { Button } from "@/components/base/button";
 import type { DocumentResult, JsonValue } from "@/lib/parse";
@@ -63,8 +64,12 @@ export function computeStats(value: JsonValue, source: string): JsonStats {
 export function problemsReportText(result: DocumentResult): string {
   if (result.status === "valid") {
     const stats = computeStats(result.value, result.source);
+    const fixed = (result.issues ?? []).flatMap((r) => [
+      `Исправлена ошибка в строке ${r.line}`, r.context, " ".repeat(r.caretOffset) + "^", r.message, "",
+    ]);
     return [
-      "✓ Корректный JSON",
+      ...fixed,
+      result.issues?.length ? "✓ JSON исправлен автоматически" : "✓ Корректный JSON",
       "",
       `Ключи      ${stats.keys}`,
       `Глубина    ${stats.maxDepth}`,
@@ -86,6 +91,14 @@ export function problemsReportText(result: DocumentResult): string {
 
 /** Verdict badge for the output tab bar (green ✓ / red ✗). */
 export function ProblemsVerdictBadge({ result }: { result: DocumentResult }) {
+  if (result.status === "valid" && result.issues?.length) {
+    return (
+      <Badge color="amber" className="gap-1">
+        <Wrench className="size-3.5" aria-hidden />
+        <span className="sr-only">JSON исправлен автоматически</span>
+      </Badge>
+    );
+  }
   if (result.status === "valid") {
     return (
       <Badge color="green" className="gap-1">
@@ -125,8 +138,20 @@ export function ProblemsPanel({ result, onJumpToLine }: ProblemsPanelProps) {
           <span className="animate-pulse-green flex size-7 items-center justify-center rounded-full bg-green-pastel text-green-dark">
             <Check className="size-4" aria-hidden />
           </span>
-          <span className="text-2xl font-bold text-[var(--jf-ink)]">Корректный JSON</span>
+          <span className="text-2xl font-bold text-[var(--jf-ink)]">
+            {result.issues?.length ? "JSON исправлен" : "Корректный JSON"}
+          </span>
         </div>
+        {result.issues?.length ? (
+          <div className="mb-5 space-y-3">
+            <p className="text-sm text-[var(--jf-ink-dim)]">
+              В исходном тексте найдены ошибки. Они подсвечены в редакторе, а результат показан уже в исправленном виде.
+            </p>
+            {result.issues.map((issue, i) => (
+              <ErrorCard key={i} report={issue} title={`Исправлено в строке ${issue.line}`} onJumpToLine={onJumpToLine} />
+            ))}
+          </div>
+        ) : null}
         <dl className="max-w-xs font-mono text-sm tabular-nums">
           {rows.map(([label, value]) => (
             <div key={label} className="flex justify-between border-b border-[var(--jf-hairline)] py-1.5">
@@ -140,32 +165,36 @@ export function ProblemsPanel({ result, onJumpToLine }: ProblemsPanelProps) {
   }
 
   if (result.status === "invalid") {
-    const { report } = result;
     return (
       <div className="p-4">
-        <div className="rounded-md border border-[var(--jf-danger-border)] bg-[var(--jf-danger-bg)] p-4 text-[var(--jf-danger-ink)]">
-          <p className="mb-2 font-mono text-sm font-semibold">
-            Ошибка в строке {report.line}
-          </p>
-          <pre className="overflow-x-auto whitespace-pre font-mono text-sm">
-            {report.context}
-            {"\n"}
-            {" ".repeat(report.caretOffset) + "^"}
-          </pre>
-          <p className="mt-2 font-mono text-sm">{report.message}</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-3 h-8 gap-1 px-2 text-[var(--jf-danger-ink)] hover:bg-[color-mix(in_srgb,var(--jf-danger-ink)_12%,transparent)] hover:text-[var(--jf-danger-ink)]"
-            onClick={() => onJumpToLine(report.line)}
-          >
-            К строке {report.line}
-            <ArrowRight className="size-3.5" aria-hidden />
-          </Button>
-        </div>
+        <ErrorCard report={result.report} title={`Ошибка в строке ${result.report.line}`} onJumpToLine={onJumpToLine} />
+        <p className="mt-3 text-sm text-[var(--jf-ink-dim)]">Автоматически исправить не удалось.</p>
       </div>
     );
   }
 
   return null;
+}
+
+function ErrorCard({ report, title, onJumpToLine }: { report: ParseReport; title: string; onJumpToLine: (line: number) => void }) {
+  return (
+    <div className="rounded-md border border-[var(--jf-danger-border)] bg-[var(--jf-danger-bg)] p-4 text-[var(--jf-danger-ink)]">
+      <p className="mb-2 font-mono text-sm font-semibold">{title}</p>
+      <pre className="overflow-x-auto whitespace-pre font-mono text-sm">
+        {report.context}
+        {"\n"}
+        {" ".repeat(report.caretOffset) + "^"}
+      </pre>
+      <p className="mt-2 font-mono text-sm">{report.message}</p>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="mt-3 h-8 gap-1 px-2 text-[var(--jf-danger-ink)] hover:bg-[color-mix(in_srgb,var(--jf-danger-ink)_12%,transparent)] hover:text-[var(--jf-danger-ink)]"
+        onClick={() => onJumpToLine(report.line)}
+      >
+        К строке {report.line}
+        <ArrowRight className="size-3.5" aria-hidden />
+      </Button>
+    </div>
+  );
 }

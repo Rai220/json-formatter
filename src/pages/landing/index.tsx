@@ -144,7 +144,10 @@ export default function JsonFormatter() {
   const autosaveWarned = useRef(false);
 
   const result = useMemo(() => parseDocument(doc, inputFormat), [doc, inputFormat]);
-  const errorLine = result.status === "invalid" ? result.report.line : null;
+  const errors = useMemo(
+    () => (result.status === "invalid" ? [result.report] : result.status === "valid" ? (result.issues ?? []) : []),
+    [result],
+  );
   const view = useMemo(() => deriveTab(activeTab, result, indentWidth), [activeTab, result, indentWidth]);
 
   // Autosave on every document change (empty → remove the key).
@@ -284,7 +287,7 @@ export default function JsonFormatter() {
           value={doc}
           onChange={setDoc}
           onCursorChange={setCursor}
-          errorLine={errorLine}
+          errors={errors}
           theme={theme}
         />
       </div>

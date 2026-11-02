@@ -58,3 +58,16 @@
 [data-jf-workbench] .cm-gutterElement {
   color: var(--jf-ink-dim);
 }
+
+/* Error decorations belong to the workbench, not to a particular syntax
+ * theme: imported themes do not define these application-specific classes. */
+[data-jf-workbench] .cm-error-line {
+  text-decoration: underline wavy var(--jf-danger-ink);
+  text-underline-offset: 3px;
+}
+
+[data-jf-workbench] .cm-error-mark {
+  background-color: var(--jf-danger-bg);
+  outline: 1px solid var(--jf-danger-ink);
+  border-radius: 2px;
+}
