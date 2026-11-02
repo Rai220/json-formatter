@@ -23,7 +23,7 @@ import { emitYaml } from "@/lib/yaml-emitter";
 import { emitCsv, CSV_NON_TABULAR } from "@/lib/csv-flattener";
 import { emitJsonl } from "@/lib/jsonl";
 
-export type TabId = "formatted" | "minified" | "jsonl" | "xml" | "csv" | "yaml" | "problems";
+export type TabId = "formatted" | "minified" | "jsonl" | "xml" | "csv" | "yaml" | "problems" | "text";
 
 const TABS: { id: TabId; label: string }[] = [
   { id: "formatted", label: "JSON" },
@@ -33,6 +33,7 @@ const TABS: { id: TabId; label: string }[] = [
   { id: "csv", label: "CSV" },
   { id: "yaml", label: "YAML" },
   { id: "problems", label: "Проверка" },
+  { id: "text", label: "Текст" },
 ];
 
 const EMPTY_MSG = "Нет данных.";
@@ -61,7 +62,14 @@ export function deriveTab(
   tabId: TabId | null,
   result: DocumentResult,
   indentWidth: IndentWidth,
+  plainText?: string,
 ): TabView {
+  if (tabId === "text") {
+    const content = plainText ?? "";
+    return content ? { tabId, kind: "editor", content, language: "plaintext", copyText: content,
+      copyLabel: "Текст скопирован.", downloadName: "formatted.txt", byteSize: byteLength(content), canExport: true }
+      : { tabId, kind: "empty", message: EMPTY_MSG, canExport: false };
+  }
   if (!tabId) {
     return {
       tabId: null,
@@ -191,6 +199,7 @@ interface OutputPanelProps {
   theme: EditorTheme;
   activeTab: TabId | null;
   view: TabView;
+  textMode?: boolean;
   onTabChange: (tab: TabId) => void;
   onCopy: (text: string, label: string) => void;
   onDownload: (name: string, content: string) => void;
@@ -202,6 +211,7 @@ export function OutputPanel({
   theme,
   activeTab,
   view,
+  textMode,
   onTabChange,
   onCopy,
   onDownload,
@@ -214,7 +224,7 @@ export function OutputPanel({
       <Tabs value={activeTab ?? ""} onValueChange={(value) => onTabChange(value as TabId)}>
         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--jf-hairline)] px-3 py-2">
           <TabsList aria-label="Форматы результата" className="h-auto w-full flex-wrap bg-[color-mix(in_srgb,var(--jf-ink)_8%,transparent)] md:w-auto">
-            {TABS.map((tab) => (
+            {TABS.filter((tab) => textMode ? tab.id === "text" : tab.id !== "text").map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} className="h-11 text-[var(--jf-ink)] data-[state=active]:bg-[var(--tint-from)] data-[state=active]:text-primary-foreground lg:h-8">
                 {tab.label}
               </TabsTrigger>

@@ -17,11 +17,12 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { tabWidthOptions, type TabWidth } from "@/data/seed";
-import type { InputFormat } from "@/lib/parse";
+import type { ContentFormat } from "@/lib/text-formatter";
 
 interface ActionBarProps {
-  inputFormat: InputFormat;
-  onInputFormatChange: (format: InputFormat) => void;
+  inputFormat: ContentFormat;
+  onInputFormatChange: (format: ContentFormat) => void;
+  textMode?: boolean;
   onFormat: () => void;
   onMinify: () => void;
   onValidate: () => void;
@@ -38,6 +39,7 @@ interface ActionBarProps {
 
 export function ActionBar({
   inputFormat,
+  textMode,
   onInputFormatChange,
   onFormat,
   onMinify,
@@ -52,7 +54,7 @@ export function ActionBar({
 }: ActionBarProps) {
   return (
     <div className={cn("flex flex-wrap items-center gap-2", className)}>
-      <Select value={inputFormat} onValueChange={(value) => onInputFormatChange(value as InputFormat)}>
+      <Select value={inputFormat} onValueChange={(value) => onInputFormatChange(value as ContentFormat)}>
         <SelectTrigger aria-label="Формат входных данных" className="h-11 w-[100px] border-[var(--jf-hairline)] bg-[var(--jf-pane-bg)] text-[var(--jf-ink)] lg:h-9">
           <SelectValue />
         </SelectTrigger>
@@ -60,18 +62,19 @@ export function ActionBar({
           <SelectItem value="auto">Авто</SelectItem>
           <SelectItem value="json">JSON</SelectItem>
           <SelectItem value="jsonl">JSONL</SelectItem>
+          <SelectItem value="text">Текст</SelectItem>
         </SelectContent>
       </Select>
-      <div role="toolbar" aria-label="Действия с JSON" className="flex flex-wrap items-center gap-2">
+      <div role="toolbar" aria-label="Действия с данными" className="flex flex-wrap items-center gap-2">
         <Button onClick={onFormat} className="gap-1.5 bg-[var(--tint-from)] text-primary-foreground hover:bg-[var(--tint-from)] hover:opacity-90">
           <WrapText className="size-4" aria-hidden />
           Форматировать
         </Button>
-        <Button onClick={onMinify} className="gap-1.5 bg-[var(--tint-from)] text-primary-foreground hover:bg-[var(--tint-from)] hover:opacity-90">
+        <Button disabled={textMode} onClick={onMinify} className="gap-1.5 bg-[var(--tint-from)] text-primary-foreground hover:bg-[var(--tint-from)] hover:opacity-90">
           <Minimize2 className="size-4" aria-hidden />
           Сжать
         </Button>
-        <Button onClick={onValidate} className="gap-1.5 bg-[var(--tint-from)] text-primary-foreground hover:bg-[var(--tint-from)] hover:opacity-90">
+        <Button disabled={textMode} onClick={onValidate} className="gap-1.5 bg-[var(--tint-from)] text-primary-foreground hover:bg-[var(--tint-from)] hover:opacity-90">
           <CheckCircle className="size-4" aria-hidden />
           Проверить
         </Button>
@@ -80,7 +83,7 @@ export function ActionBar({
       {children}
 
       <div className="ml-auto flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-        <div className="flex items-center gap-2 text-sm text-[var(--jf-ink)]">
+        <div hidden={textMode} className={cn("flex items-center gap-2 text-sm text-[var(--jf-ink)]", textMode && "hidden")}>
           <span id="indent-width-label" className="text-[var(--jf-ink-dim)]">
             Отступ:
           </span>

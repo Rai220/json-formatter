@@ -15,7 +15,8 @@ import { Button } from "@/components/base/button";
 import { InputEditor, type InputEditorHandle } from "@/components/input-editor";
 import { ActionBar } from "@/components/action-bar";
 import { OutputPanel, deriveTab, type TabId } from "@/components/output-panel";
-import { parseDocument, type InputFormat } from "@/lib/parse";
+import { parseDocument } from "@/lib/parse";
+import { formatPlainText, usesPlainText, type ContentFormat } from "@/lib/text-formatter";
 import { formatDocument } from "@/lib/formatter";
 import { encodeShare, decodeHash } from "@/lib/hash";
 import { useDataProvider, type TabWidth } from "@/lib/data-provider";
@@ -126,7 +127,7 @@ export default function JsonFormatter() {
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [indentWidth, setIndentWidth] = useState<TabWidth>(defaultTabWidth);
   const [activeTab, setActiveTab] = useState<TabId | null>("formatted");
-  const [inputFormat, setInputFormat] = useState<InputFormat>("auto");
+  const [inputFormat, setInputFormat] = useState<ContentFormat>("auto");
   const [theme, setTheme] = useState<EditorTheme>(() => readInitialTheme());
 
   const handleThemeChange = (id: string) => {
@@ -143,12 +144,15 @@ export default function JsonFormatter() {
   const fileRef = useRef<HTMLInputElement>(null);
   const autosaveWarned = useRef(false);
 
-  const result = useMemo(() => parseDocument(doc, inputFormat), [doc, inputFormat]);
+  const result = useMemo(() => parseDocument(doc, inputFormat === "text" ? "auto" : inputFormat), [doc, inputFormat]);
+  const textMode = usesPlainText(doc, inputFormat, result);
+  const plainText = useMemo(() => textMode ? formatPlainText(doc) : undefined, [doc, textMode]);
+  const selectedTab = textMode ? "text" : activeTab === "text" ? "formatted" : activeTab;
   const errors = useMemo(
-    () => (result.status === "invalid" ? [result.report] : result.status === "valid" ? (result.issues ?? []) : []),
-    [result],
+    () => (textMode ? [] : result.status === "invalid" ? [result.report] : result.status === "valid" ? (result.issues ?? []) : []),
+    [result, textMode],
   );
-  const view = useMemo(() => deriveTab(activeTab, result, indentWidth), [activeTab, result, indentWidth]);
+  const view = useMemo(() => deriveTab(selectedTab, result, indentWidth, plainText), [selectedTab, result, indentWidth, plainText]);
 
   // Autosave on every document change (empty → remove the key).
   useEffect(() => {
@@ -254,6 +258,7 @@ export default function JsonFormatter() {
 
   const actionBarProps = {
     inputFormat,
+    textMode,
     onInputFormatChange: setInputFormat,
     themeMenu: <ThemeMenu theme={theme} onThemeChange={handleThemeChange} />,
     onFormat: () => setActiveTab("formatted"),
@@ -304,7 +309,8 @@ export default function JsonFormatter() {
       <OutputPanel
         result={result}
         theme={theme}
-        activeTab={activeTab}
+      activeTab={selectedTab}
+      textMode={textMode}
         view={view}
         onTabChange={setActiveTab}
         onCopy={(text, label) => void copyToClipboard(text, label)}
