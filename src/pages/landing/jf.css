@@ -1,0 +1,60 @@
+/* JSON Formatter — screen-local styles.
+ * The green verdict pulse (one-shot) for the Problems valid state and the
+ * `--calc-header-h` token the narrow sticky action bar aligns to. */
+
+:root {
+  --calc-header-h: 3.5rem; /* matches CalcCanvas's h-14 sticky top bar */
+
+  /* Full-bleed workbench tokens — dark ink on white panes, azure-tinted
+   * hairlines. Page-scoped; the shared starter tokens are untouched. */
+  --jf-pane-bg: #ffffff;
+  --jf-ink: #0b2545;
+  --jf-ink-dim: rgba(11, 37, 69, 0.62);
+  --jf-hairline: rgba(0, 38, 84, 0.12);
+  --jf-danger-bg: #fff1f2;
+  --jf-danger-ink: #9f1239;
+  --jf-danger-border: #fecdd3;
+  --jf-header-fg: #ffffff;
+  --jf-header-button-bg: rgba(0, 0, 0, 0.2);
+  --jf-header-button-hover: rgba(0, 0, 0, 0.3);
+  --jf-header-border: rgba(255, 255, 255, 0.5);
+}
+
+.jf-header-action.jf-header-action {
+  color: var(--jf-header-fg);
+  background: var(--jf-header-button-bg);
+  border-color: var(--jf-header-border);
+}
+.jf-header-action.jf-header-action:hover {
+  color: var(--jf-header-fg);
+  background: var(--jf-header-button-hover);
+}
+
+@keyframes pulse-green {
+  0% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 12px rgba(74, 222, 128, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+  }
+}
+
+.animate-pulse-green {
+  animation: pulse-green 1s ease-out 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse-green {
+    animation: none;
+  }
+}
+
+/* Line numbers follow the active theme's dim ink, which is tuned for WCAG AA
+ * contrast on its pane — some syntax themes ship fainter gutters. */
+[data-jf-workbench] .cm-gutters,
+[data-jf-workbench] .cm-gutterElement {
+  color: var(--jf-ink-dim);
+}

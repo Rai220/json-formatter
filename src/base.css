@@ -1,0 +1,74 @@
+/* Base — landing page element styles.
+ *
+ * The type scale is defined in tailwind.config.ts (fontSize).
+ * This file provides .landing scoped heading styles that use
+ * the scale via CSS variables for responsive sizing.
+ *
+ * Style-pack.css controls font family and weight.
+ * This file only controls size, line-height, and tracking.
+ */
+
+/* ── Landing page typography ─────────────────────────────────────
+ * Scoped to .landing so these element styles only apply on marketing
+ * pages. App pages use Tailwind utility classes + shadcn components.
+ */
+
+.landing h1,
+.landing h2,
+.landing h3,
+.landing h4 {
+  font-family: var(--font-heading);
+}
+
+.landing h1 {
+  font-size: 40px;
+  line-height: 48px;
+  letter-spacing: -2.4px;
+  text-wrap: balance;
+}
+
+.landing h2 {
+  font-size: 32px;
+  line-height: 40px;
+  letter-spacing: -1.28px;
+}
+
+.landing h3 {
+  font-size: 24px;
+  line-height: 32px;
+  letter-spacing: -0.96px;
+}
+
+.landing h4 {
+  font-size: 20px;
+  line-height: 28px;
+}
+
+/* Fluid hero — modifier class for the primary landing headline */
+.landing h1.display {
+  font-size: clamp(2.75rem, -2rem + 8vw, 5.5rem);
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+
+/* Mobile — one step down */
+@media (max-width: 950px) {
+  .landing h1 {
+    font-size: 32px;
+    line-height: 40px;
+    letter-spacing: -1.28px;
+  }
+  .landing h2 {
+    font-size: 24px;
+    line-height: 32px;
+    letter-spacing: -0.96px;
+  }
+  .landing h3 {
+    font-size: 20px;
+    line-height: 28px;
+  }
+  .landing h4 {
+    font-size: 18px;
+    line-height: 28px;
+  }
+}

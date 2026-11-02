@@ -1,0 +1,102 @@
+/* Motion presets — each template app picks one reveal style (like tints, one
+ * motion per app). Set `data-motion="<name>"` on the app root; elements with the
+ * `.reveal` class read these tokens and transition in when their `.reveal-group`
+ * scrolls into view, staggered by their `--reveal-i` index. Default is `rise`.
+ * Imported after tints.css.
+ *
+ * Learned from the pattern Squarespace ships (a global, pickable animation preset
+ * driven by CSS vars + IntersectionObserver + index stagger) — reimplemented from
+ * scratch to fit this starter's token system. */
+
+:root,
+[data-motion="rise"] {
+  --reveal-opacity: 0;
+  --reveal-x: 0;
+  --reveal-y: 16px;
+  --reveal-scale: 1;
+  --reveal-blur: 0px;
+  --reveal-duration: 0.55s;
+  --reveal-ease: cubic-bezier(0.25, 0.1, 0.25, 1);
+  --reveal-stagger: 80ms;
+}
+
+[data-motion="fade"] {
+  --reveal-y: 0;
+}
+
+[data-motion="slide"] {
+  --reveal-x: -24px;
+  --reveal-y: 0;
+}
+
+[data-motion="scale"] {
+  --reveal-y: 0;
+  --reveal-scale: 0.96;
+}
+
+[data-motion="blur"] {
+  --reveal-y: 8px;
+  --reveal-blur: 12px;
+}
+
+/* A revealing element: starts offset/hidden per the active preset, then eases to
+ * its resting state once its group is marked revealed. Stagger comes from the
+ * per-item `--reveal-i` index set by `nth-child` below (no JS index injection). */
+.reveal {
+  --reveal-delay: calc(var(--reveal-stagger, 80ms) * var(--reveal-i, 0));
+  opacity: var(--reveal-opacity, 0);
+  transform: translate3d(var(--reveal-x, 0), var(--reveal-y, 16px), 0) scale(var(--reveal-scale, 1));
+  filter: blur(var(--reveal-blur, 0px));
+  transition:
+    opacity var(--reveal-duration, 0.55s) var(--reveal-ease) var(--reveal-delay),
+    transform var(--reveal-duration, 0.55s) var(--reveal-ease) var(--reveal-delay),
+    filter var(--reveal-duration, 0.55s) var(--reveal-ease) var(--reveal-delay);
+  will-change: opacity, transform, filter;
+}
+
+/* Stagger by sibling position — direct `.reveal` children cascade in order.
+ * Capped at 8 (groups in this starter are small); a 9th+ item reveals with the
+ * group but without extra delay (falls back to `--reveal-i: 0`). */
+.reveal-group > .reveal:nth-child(1) { --reveal-i: 0; }
+.reveal-group > .reveal:nth-child(2) { --reveal-i: 1; }
+.reveal-group > .reveal:nth-child(3) { --reveal-i: 2; }
+.reveal-group > .reveal:nth-child(4) { --reveal-i: 3; }
+.reveal-group > .reveal:nth-child(5) { --reveal-i: 4; }
+.reveal-group > .reveal:nth-child(6) { --reveal-i: 5; }
+.reveal-group > .reveal:nth-child(7) { --reveal-i: 6; }
+.reveal-group > .reveal:nth-child(8) { --reveal-i: 7; }
+
+.reveal-group[data-revealed="true"] .reveal {
+  opacity: 1;
+  transform: none;
+  filter: none;
+}
+
+/* Step-flow panel: replays a fade + slide-up each time the active step remounts. */
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.step-panel {
+  animation: step-in 0.5s var(--reveal-ease, cubic-bezier(0.25, 0.1, 0.25, 1)) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .reveal-group[data-revealed="true"] .reveal {
+    transition: none;
+    opacity: 1;
+    transform: none;
+    filter: none;
+  }
+  .step-panel {
+    animation: none;
+  }
+}

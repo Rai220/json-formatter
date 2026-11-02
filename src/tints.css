@@ -1,0 +1,47 @@
+/* App tints — each template app picks one identity tint, one identity tint per app. Set `data-tint="<name>"` on
+ * the landing/app root; sections read the tokens: var(--tint-gradient),
+ * var(--tint-from), var(--tint-to), var(--tint-pill-text). Default is green.
+ * Imported after style-pack.css. */
+
+:root,
+[data-tint="green"] {
+  --tint-from: #446013;
+  --tint-to: #709a28;
+  --tint-pill-text: #446013;
+  --tint-gradient: linear-gradient(180deg, #446013 0%, #709a28 100%);
+}
+
+[data-tint="crimson"] {
+  --tint-from: #f13b6c;
+  --tint-to: #d31130;
+  --tint-pill-text: #d31130;
+  --tint-gradient: linear-gradient(180deg, #f13b6c 0%, #d31130 100%);
+}
+
+[data-tint="plum"] {
+  --tint-from: #5b0047;
+  --tint-to: #ac3448;
+  --tint-pill-text: #5b0047;
+  --tint-gradient: linear-gradient(180deg, #5b0047 0%, #ac3448 100%);
+}
+
+[data-tint="indigo"] {
+  --tint-from: #342e91;
+  --tint-to: #5853ba;
+  --tint-pill-text: #342e91;
+  --tint-gradient: linear-gradient(180deg, #342e91 0%, #5853ba 100%);
+}
+
+[data-tint="azure"] {
+  --tint-from: #004db3;
+  --tint-to: #0082d5;
+  --tint-pill-text: #004db3;
+  --tint-gradient: linear-gradient(180deg, #004db3 0%, #0082d5 100%);
+}
+
+[data-tint="teal"] {
+  --tint-from: #00645f;
+  --tint-to: #139992;
+  --tint-pill-text: #00645f;
+  --tint-gradient: linear-gradient(180deg, #00645f 0%, #139992 100%);
+}

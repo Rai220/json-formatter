@@ -1,0 +1,39 @@
+/*
+ * Tokens for the welcome page.
+ *
+ * Dark is the BASE, not a variant behind `prefers-color-scheme`. This is a
+ * developer tool — people arrive from a dark editor and leave to a dark
+ * editor — so a light page would be the odd one out rather than the default.
+ * The editor agrees: `DEFAULT_THEME_ID` is a dark syntax theme.
+ *
+ * Scoped to `[data-welcome]` rather than `:root` so nothing here leaks into the
+ * editor, which has its own palette and six switchable syntax themes.
+ *
+ * To offer light as well, wrap the overrides in
+ * `@media (prefers-color-scheme: light)` — every value below is already a
+ * token, so nothing else has to change.
+ */
+
+[data-welcome] {
+  --w-page: #000000;
+  --w-surface: #1c1c1e;
+  --w-label: rgba(255, 255, 255, 0.92);
+  --w-muted: rgba(255, 255, 255, 0.76);
+  --w-faint: rgba(255, 255, 255, 0.6);
+  --w-hairline: rgba(120, 120, 128, 0.36);
+  --w-sunken: rgba(255, 255, 255, 0.06);
+
+  /* A shadow cast onto black is invisible, so the tile edge has to be drawn.
+     Keeping a soft one as well stops the cards looking pasted flat on. */
+  --w-tile-shadow: 0 12px 34px rgba(0, 0, 0, 0.6);
+  --w-tile-border: 1px solid rgba(255, 255, 255, 0.08);
+
+  /* The one button on the page. */
+  --w-cta-bg: #ffffff;
+  --w-cta-fg: #000000;
+
+  /* Syntax, tuned for a dark surface. */
+  --w-code-key: #6cb6ff;
+  --w-code-str: #7ee787;
+  --w-code-num: #ffa657;
+}

@@ -1,0 +1,243 @@
+/* StylePack — Tool (bold / delight register)
+ *
+ * Azure primary (#004DB3 → #0082D5 family), a saturated azure
+ * `.calc-canvas` gradient (never white), white cards that lift off it, and
+ * gradient CTAs. Plus Jakarta Sans for heading + body. 1.1rem radius (chunky).
+ * Imported AFTER index.css — these values override the neutral defaults.
+ */
+
+:root {
+  --font-heading: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading-weight: 700;
+  --font-body-weight: 400;
+
+  /* Radius — chunkier for the bold redesign */
+  --radius: 1.1rem;
+
+  /* Colors */
+  /* Slate-blue canvas fallback; the flow uses the layered `.calc-canvas`
+     gradient below. Cards stay white (--color-card) so panels lift off it. */
+  --color-background: oklch(0.955 0.014 250);
+  --color-foreground: oklch(0.22 0.02 260);
+  --color-card: oklch(1 0 0);
+  --color-card-foreground: oklch(0.22 0.02 260);
+  --color-popover: oklch(1 0 0);
+  --color-popover-foreground: oklch(0.22 0.02 260);
+  /* Primary — azure identity tint (#004DB3 → #0082D5 family) so accents pop. */
+  --color-primary: oklch(0.5 0.15 245);
+  --color-primary-foreground: oklch(0.99 0 0);
+  --color-secondary: oklch(0.95 0.035 245);
+  --color-secondary-foreground: oklch(0.34 0.09 245);
+  --color-muted: oklch(0.955 0.02 245);
+  --color-muted-foreground: oklch(0.5 0.035 245);
+  --color-accent: oklch(0.95 0.04 245);
+  --color-accent-foreground: oklch(0.34 0.09 245);
+  --color-destructive: oklch(0.577 0.245 27.325);
+  --color-destructive-foreground: oklch(0.975 0 0);
+  --color-border: oklch(0.2 0 0 / 15%);
+  --color-input: oklch(0.2 0 0 / 15%);
+  --color-ring: oklch(0.55 0.16 245);
+  --color-sidebar: oklch(0.96 0 0);
+  --color-sidebar-foreground: oklch(0.2 0 0);
+  --color-sidebar-primary: oklch(0.588 0.145 242);
+  --color-sidebar-primary-foreground: oklch(0.975 0 0);
+  --color-sidebar-accent: oklch(0.935 0.04 260);
+  --color-sidebar-accent-foreground: oklch(0.2 0 0);
+  --color-sidebar-border: oklch(0.2 0 0 / 15%);
+  --color-sidebar-ring: oklch(0.2 0 0);
+}
+
+body {
+  font-feature-settings: "cv11";
+  text-rendering: optimizeLegibility;
+  text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  font-weight: var(--font-body-weight);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: var(--font-heading-weight);
+}
+
+/* ---------------------------------------------------------------------------
+ * Progressive-disclosure flow skin — depth + warmth (redesign)
+ * Layered gradient canvas, real card elevation, gradient CTA, accent moments.
+ * ------------------------------------------------------------------------- */
+.calc-canvas {
+  background-image:
+    linear-gradient(180deg, rgba(0, 45, 104, 0.42), rgba(0, 45, 104, 0) 260px),
+    linear-gradient(rgba(0, 74, 150, 0.86), rgba(0, 74, 150, 0.86)),
+    url("/clouds.jpg");
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
+  background-color: #004a96;
+}
+/* On-canvas text that sits directly on the saturated gradient. */
+.on-canvas { color: #ffffff; }
+.on-canvas-dim { color: rgba(255, 255, 255, 0.88); }
+.rule-on-canvas { background-color: rgba(255, 255, 255, 0.28); }
+
+/* Resting card elevation (done rows, panels). */
+.card-elevated {
+  box-shadow:
+    0 1px 2px rgba(0, 51, 128, 0.06),
+    0 16px 34px -16px rgba(0, 70, 170, 0.24);
+}
+
+/* The active step lifts noticeably off the canvas. */
+.card-active {
+  box-shadow:
+    0 2px 6px rgba(0, 51, 128, 0.08),
+    0 32px 64px -22px rgba(0, 105, 220, 0.38);
+}
+
+/* The signature gradient — azure #004DB3 (bottom-left) → #0082D5 (top-right). */
+.brand-gradient {
+  background-image: linear-gradient(to top right, #004db3, #0082d5);
+}
+.cta-gradient {
+  background-image: linear-gradient(to top right, #004db3, #0082d5);
+}
+.cta-glow {
+  box-shadow: 0 12px 28px -8px rgba(0, 105, 205, 0.55);
+}
+
+/* Gradient text (hero number). */
+.text-gradient {
+  background-image: linear-gradient(to top right, #004db3, #0082d5);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Tinted panel behind the results hero number. */
+.hero-panel {
+  background: linear-gradient(150deg, rgba(0, 105, 205, 0.15), rgba(0, 105, 205, 0.03));
+}
+
+/* Positive/savings emphasis. */
+.text-success {
+  color: oklch(0.58 0.15 155);
+}
+
+/* Active rail node halo (white, for on-canvas placement). */
+.rail-active-glow {
+  box-shadow: 0 0 0 5px rgba(255, 255, 255, 0.28);
+}
+
+/* ---------------------------------------------------------------------------
+ * Design tokens — type scale, easing, and form fields for the flow.
+ * Display = Plus Jakarta Sans. Tight negative tracking + tight leading.
+ * Spacing rhythm (px): 8 · 16 · 24 · 32 · 40 · 48 · 64.
+ * ------------------------------------------------------------------------- */
+:root {
+  --ease-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
+}
+
+/* Google Material Symbols (Rounded) — icon ligatures via <span>. */
+.material-symbols-rounded {
+  font-family: "Material Symbols Rounded";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: "liga";
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: "opsz" 24, "wght" 400, "FILL" 0, "GRAD" 0;
+}
+
+.type-hsuper {
+  font-size: clamp(56px, 7vw, 112px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  font-weight: 700;
+}
+.type-h1 {
+  font-size: clamp(44px, 5vw, 72px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.type-h2 {
+  font-size: clamp(30px, 4vw, 52px);
+  line-height: 1.03;
+  letter-spacing: -0.02em;
+  font-weight: 600;
+}
+.type-h3 {
+  font-size: clamp(22px, 2.4vw, 30px);
+  line-height: 1.15;
+  letter-spacing: -0.015em;
+  font-weight: 600;
+}
+.type-body-lg {
+  font-size: 1.125rem;
+  line-height: 1.45;
+  letter-spacing: -0.005em;
+}
+.type-small {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+.type-micro {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+/* Big, friendly field value (beats shadcn's md:text-sm via load order). */
+.field-xl {
+  font-size: 1.875rem;
+  letter-spacing: -0.02em;
+}
+@media (min-width: 640px) {
+  .field-xl {
+    font-size: 2.25rem;
+  }
+}
+
+/* Tonal, monochromatic surfaces: a lighter, frosted shade of the saturated
+ * field — never white. White text throughout. */
+.card-tonal {
+  background-color: rgba(0, 38, 84, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  backdrop-filter: blur(20px) saturate(1.1);
+  -webkit-backdrop-filter: blur(20px) saturate(1.1);
+}
+.field-tonal {
+  background-color: rgba(0, 38, 84, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 14px;
+  color: #fff;
+  transition:
+    border-color 150ms var(--ease-smooth),
+    background-color 150ms var(--ease-smooth),
+    box-shadow 150ms var(--ease-smooth);
+}
+.field-tonal::placeholder {
+  color: rgba(255, 255, 255, 0.72);
+}
+.field-tonal:hover {
+  background-color: rgba(0, 38, 84, 0.4);
+}
+.field-tonal:focus,
+.field-tonal:focus-visible {
+  outline: none;
+  background-color: rgba(0, 38, 84, 0.46);
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.18);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
